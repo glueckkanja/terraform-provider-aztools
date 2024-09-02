@@ -1,4 +1,4 @@
-module github.com/glueckkanja-gab/terraform-provider-aztools
+module github.com/glueckkanja/terraform-provider-aztools
 
 go 1.17
 

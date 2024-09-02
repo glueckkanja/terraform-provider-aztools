@@ -13,7 +13,7 @@ Requirements
 Using the provider
 ----------------------
 
-See [Terraform Registry](https://registry.terraform.io/providers/glueckkanja-gab/aztools/latest).
+See [Terraform Registry](https://registry.terraform.io/providers/glueckkanja/aztools/latest).
 
 Building The Provider
 ---------------------
