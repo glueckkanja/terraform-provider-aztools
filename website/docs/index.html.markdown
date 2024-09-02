@@ -40,8 +40,8 @@ provider "aztools" {
   convention           = "default"
   lowercase            = true
   hash_length          = 2
-  schema_naming_url    = "https://raw.githubusercontent.com/glueckkanja-gab/terraform-provider-aztools/main/examples/naming_schema/schema.naming.json"
-  schema_locations_url = "https://raw.githubusercontent.com/glueckkanja-gab/terraform-provider-aztools/main/examples/naming_schema/schema.locations.json"
+  schema_naming_url    = "https://raw.githubusercontent.com/glueckkanja/terraform-provider-aztools/main/examples/naming_schema/schema.naming.json"
+  schema_locations_url = "https://raw.githubusercontent.com/glueckkanja/terraform-provider-aztools/main/examples/naming_schema/schema.locations.json"
 }
 ```
 

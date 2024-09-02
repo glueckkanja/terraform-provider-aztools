@@ -13,10 +13,13 @@ generate:
 	go fmt
 
 build:
-	go build -o ~/.terraform.d/plugins/github.com/glueckkanja-gab/aztools/0.1.0/linux_amd64/terraform-provider-aztools
+	go build -o ${GOBIN}/terraform-provider-aztools #-o ~/.terraform.d/plugins/github.com/glueckkanja/aztools/0.7.0/linux_amd64/terraform-provider-aztools
 
-test: generate build
-	cd ./examples && rm -f .terraform.lock.hcl && terraform init -upgrade && TF_REATTACH_PROVIDERS='{"registry.terraform.io/my-org/my-provider":{"Protocol":"grpc","Pid":3382870,"Test":true,"Addr":{"Network":"unix","String":"/tmp/plugin713096927"}}}' terraform apply -auto-approve
+init:
+	cd ./examples && terraform init -upgrade
+
+test: generate build init
+	cd ./examples && terraform plan
 
 plan: generate build
 	cd ./examples && rm -f .terraform.lock.hcl && terraform init -upgrade && terraform plan
