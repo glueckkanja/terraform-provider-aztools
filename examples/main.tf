@@ -4,7 +4,7 @@ terraform {
     //  source = "hashicorp/azurerm"
     //}
     aztools = {
-      source = "github.com/glueckkanja-gab/aztools"
+      source = "github.com/glueckkanja/aztools"
     }
   }
 }
@@ -24,7 +24,7 @@ provider "aztools" {
   convention         = "default"
   lowercase          = true
   schema_naming_path = "./naming_schema/schema.naming.json"
-  # schema_naming_url = "https://raw.githubusercontent.com/glueckkanja-gab/terraform-provider-aztools/main/examples/naming_schema/schema.naming.json"
+  # schema_naming_url = "https://raw.githubusercontent.com/glueckkanja/terraform-provider-aztools/main/examples/naming_schema/schema.naming.json"
   schema_locations_path = "./naming_schema/schema.locations.json"
-  # schema_locations_url = "https://raw.githubusercontent.com/glueckkanja-gab/terraform-provider-aztools/main/examples/naming_schema/schema.locations.json"
+  # schema_locations_url = "https://raw.githubusercontent.com/glueckkanja/terraform-provider-aztools/main/examples/naming_schema/schema.locations.json"
 }
