@@ -13,14 +13,14 @@ Requirements
 Using the provider
 ----------------------
 
-See [Terraform Registry](https://registry.terraform.io/providers/glueckkanja-gab/aztools/latest).
+See [Terraform Registry](https://registry.terraform.io/providers/glueckkanja/aztools/latest).
 
 Building The Provider
 ---------------------
 
 1. Clone the repository
 1. Install 'Remote Containers' VS Code Extension
-1. Build the provider using the `make` command: 
+1. Build the provider using the `make` command:
 ```sh
 $ make build
 ```
@@ -30,7 +30,7 @@ Developing the Provider
 
 1. Clone the repository
 1. Install 'Remote Containers' VS Code Extension
-1. Build & test the provider using the `make` command: 
+1. Build & test the provider using the `make` command:
 ```sh
 $ make
 ```
