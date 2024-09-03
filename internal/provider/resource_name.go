@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/glueckkanja-gab/terraform-provider-aztools/internal/provider/common"
-	"github.com/glueckkanja-gab/terraform-provider-aztools/internal/provider/models"
-	"github.com/glueckkanja-gab/terraform-provider-aztools/internal/provider/validate"
+	"github.com/glueckkanja/terraform-provider-aztools/internal/provider/common"
+	"github.com/glueckkanja/terraform-provider-aztools/internal/provider/models"
+	"github.com/glueckkanja/terraform-provider-aztools/internal/provider/validate"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
