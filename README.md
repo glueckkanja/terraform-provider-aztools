@@ -31,7 +31,6 @@ Developing the Provider
 1. Clone the repository
 1. Install 'Remote Containers' VS Code Extension
 1. Build & test the provider using the `make` command:
-
 ```sh
 $ make
 ```
