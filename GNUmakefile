@@ -13,7 +13,7 @@ generate:
 	go fmt
 
 build:
-	go build -o ~/.terraform.d/plugins/github.com/glueckkanja-gab/aztools/0.0.1/linux_amd64/terraform-provider-aztools
+	go build -o ~/.terraform.d/plugins/github.com/glueckkanja/aztools/0.0.1/linux_amd64/terraform-provider-aztools
 
 test: generate build
 	cd ./examples && terraform init -upgrade -get-plugins=true && terraform apply -auto-approve

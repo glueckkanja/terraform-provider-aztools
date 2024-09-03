@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/glueckkanja/terraform-provider-aztools/internal/provider/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
-	"github.com/glueckkanja-gab/terraform-provider-aztools/internal/provider/models"
 )
 
 // AzTools -

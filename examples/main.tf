@@ -4,7 +4,7 @@ terraform {
     //  source = "hashicorp/azurerm"
     //}
     aztools = {
-      source = "github.com/glueckkanja-gab/aztools"
+      source = "github.com/glueckkanja/aztools"
     }
   }
 }
