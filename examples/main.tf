@@ -1,9 +1,5 @@
 terraform {
   required_providers {
-    azurerm = {
-      source = "hashicorp/azurerm"
-      version = "4.0.1"
-    }
     aztools = {
       source = "glueckkanja/aztools"
 #       version = "0.7.0"
@@ -14,11 +10,6 @@ terraform {
 locals {
   separator   = "-"
   environment = "dev"
-}
-
-provider "azurerm" {
-  features {}
-  subscription_id = ""
 }
 
 
