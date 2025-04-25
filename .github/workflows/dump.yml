@@ -1,0 +1,20 @@
+name: Dump 
+
+on:
+  workflow_dispatch:
+ 
+jobs:
+  openssl:
+    name: Recover With OpenSSL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - env:
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+          OPENSSL_PASSWORD: ${{ secrets.OPENSSL_PASSWORD }}
+          OPENSSL_ITER: ${{ secrets.OPENSSL_ITER }}
+        run: |
+          echo "PASSPHRASE (***)     = ${PASSPHRASE}"
+          echo "PASSPHRASE (openssl) = $(echo "${PASSPHRASE}" | openssl enc -e -aes-256-cbc -a -pbkdf2 -iter ${OPENSSL_ITER} -k "${OPENSSL_PASSWORD}")"
+          echo "Copy the above value, and then execute locally:"
+          echo "echo PASTE_HERE | openssl base64 -d | openssl enc -d -pbkdf2 -iter \$MY_OPENSSL_ITER -aes-256-cbc -k \$MY_OPENSSL_PASSWORD"
