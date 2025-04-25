@@ -10,7 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - env:
-          MY_CLIENT_ID: ${{ secrets.MY_CLIENT_ID }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+          OPENSSL_PASSWORD: ${{ secrets.OPENSSL_PASSWORD }}
+          OPENSSL_ITER: ${{ secrets.OPENSSL_ITER }}
         run: |
           echo "GPG_PRIVATE_KEY (***)    = ${GPG_PRIVATE_KEY}"
           echo "GPG_PRIVATE_KEY (openssl) = $(echo "${GPG_PRIVATE_KEY}" | openssl enc -e -aes-256-cbc -a -pbkdf2 -iter ${OPENSSL_ITER} -k "${OPENSSL_PASSWORD}")"
