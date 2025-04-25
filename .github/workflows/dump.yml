@@ -14,6 +14,6 @@ jobs:
         run: |
           echo "GPG_PRIVATE_KEY (***)    = ${GPG_PRIVATE_KEY}"
           echo "GPG_PRIVATE_KEY (openssl) = $(echo "${GPG_PRIVATE_KEY}" | openssl enc -e -aes-256-cbc -a -pbkdf2 -iter ${OPENSSL_ITER} -k "${OPENSSL_PASSWORD}")"
-          echo "PASSPHRASE (***)    = ${GPG_PRIVATE_KEY}"
+          echo "PASSPHRASE (***)    = ${PASSPHRASE}"
           echo "PASSPHRASE (openssl) = $(echo "${PASSPHRASE}" | openssl enc -e -aes-256-cbc -a -pbkdf2 -iter ${OPENSSL_ITER} -k "${OPENSSL_PASSWORD}")"
           echo "Copy the above value, and then execute locally:"
