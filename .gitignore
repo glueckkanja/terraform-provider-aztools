@@ -35,3 +35,9 @@ website/vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+
+# Ignore all .tfstate and .lock.hcl files
+*.tfstate
+*.tfstate.*
+*.lock.hcl
+
