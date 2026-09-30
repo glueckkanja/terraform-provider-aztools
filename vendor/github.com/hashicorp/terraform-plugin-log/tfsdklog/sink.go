@@ -1,11 +1,16 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package tfsdklog
 
 import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/hashicorp/go-hclog"
@@ -53,13 +58,8 @@ const (
 // loggers.
 var ValidLevels = []string{"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF"}
 
-func getSink(ctx context.Context) hclog.Logger {
-	logger := ctx.Value(logging.SinkKey)
-	if logger == nil {
-		return nil
-	}
-	return logger.(hclog.Logger)
-}
+// Only show invalid log level message once across any number of level lookups.
+var invalidLogLevelMessage sync.Once
 
 // RegisterTestSink sets up a logging sink, for use with test frameworks and
 // other cases where plugin logs don't get routed through Terraform. This
@@ -70,11 +70,57 @@ func getSink(ctx context.Context) hclog.Logger {
 //
 // RegisterTestSink must be called prior to any loggers being setup or
 // instantiated.
+//
+// Deprecated: RegisterTestSink will be removed in a future release in order to
+// drop the dependency on github.com/mitchellh/go-testing-interface, which is
+// no longer maintained. Use ContextWithTestLogging instead of
+// RegisterTestSink.
 func RegisterTestSink(ctx context.Context, t testing.T) context.Context {
-	return context.WithValue(ctx, logging.SinkKey, newSink(t))
+	logger, loggerOptions := newTestSink(t.Name())
+
+	ctx = logging.SetSink(ctx, logger)
+	ctx = logging.SetSinkOptions(ctx, loggerOptions)
+
+	return ctx
 }
 
-func newSink(t testing.T) hclog.Logger {
+// ContextWithStandardLogging sets up a logging sink for use with test sweepers and
+// other cases where plugin logs don't get routed through Terraform and the
+// built-in Go `log` package is also used.
+//
+// ContextWithStandardLogging should only ever be called by test sweepers, providers
+// should never call it.
+//
+// ContextWithStandardLogging must be called prior to any loggers being setup or
+// instantiated.
+func ContextWithStandardLogging(ctx context.Context, testName string) context.Context {
+	logger, loggerOptions := newStdlogSink()
+
+	ctx = logging.SetSink(ctx, logger)
+	ctx = logging.SetSinkOptions(ctx, loggerOptions)
+
+	return ctx
+}
+
+// ContextWithTestLogging sets up a logging sink, for use with test frameworks
+// and other cases where plugin logs don't get routed through Terraform. This
+// applies the same filtering and file output behaviors that Terraform does.
+//
+// ContextWithTestLogging should only ever be called by test frameworks,
+// providers should never call it.
+//
+// ContextWithTestLogging must be called prior to any loggers being setup or
+// instantiated.
+func ContextWithTestLogging(ctx context.Context, testName string) context.Context {
+	logger, loggerOptions := newTestSink(testName)
+
+	ctx = logging.SetSink(ctx, logger)
+	ctx = logging.SetSinkOptions(ctx, loggerOptions)
+
+	return ctx
+}
+
+func newTestSink(testName string) (hclog.Logger, *hclog.LoggerOptions) {
 	logOutput := io.Writer(os.Stderr)
 	var json bool
 	var logLevel hclog.Level
@@ -98,7 +144,7 @@ func newSink(t testing.T) hclog.Logger {
 	// if TF_LOG_PATH_MASK is set, use a test-name specific logging file,
 	// instead
 	if logPathMask := os.Getenv(envLogPathMask); logPathMask != "" {
-		testName := strings.Replace(t.Name(), "/", "__", -1)
+		testName := strings.Replace(testName, "/", "__", -1)
 		logFile = fmt.Sprintf(logPathMask, testName)
 	}
 
@@ -120,24 +166,41 @@ func newSink(t testing.T) hclog.Logger {
 	} else if isValidLogLevel(envLevel) {
 		logLevel = hclog.LevelFromString(envLevel)
 	} else {
-		fmt.Fprintf(os.Stderr, "[WARN] Invalid log level: %q. Defaulting to level: OFF. Valid levels are: %+v",
-			envLevel, ValidLevels)
+		invalidLogLevelMessage.Do(func() {
+			fmt.Fprintf(
+				os.Stderr,
+				"[WARN] Invalid log level: %q. Defaulting to level: OFF. Valid levels are: %+v\n",
+				envLevel,
+				ValidLevels,
+			)
+		})
 	}
 
-	return hclog.New(&hclog.LoggerOptions{
+	loggerOptions := &hclog.LoggerOptions{
 		Level:             logLevel,
 		Output:            logOutput,
 		IndependentLevels: true,
 		JSONFormat:        json,
-	})
+	}
+
+	return hclog.New(loggerOptions), loggerOptions
 }
 
 func isValidLogLevel(level string) bool {
-	for _, l := range ValidLevels {
-		if level == string(l) {
+	for _, validLevel := range ValidLevels {
+		if level == validLevel {
 			return true
 		}
 	}
 
 	return false
+}
+
+func newStdlogSink() (hclog.Logger, *hclog.LoggerOptions) {
+	loggerOptions := &hclog.LoggerOptions{
+		IndependentLevels: true,
+		JSONFormat:        false,
+	}
+
+	return hclog.FromStandardLogger(log.Default(), loggerOptions), loggerOptions
 }
