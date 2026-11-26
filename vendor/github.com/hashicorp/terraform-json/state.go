@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2019, 2026
+// SPDX-License-Identifier: MPL-2.0
+
 package tfjson
 
 import (
@@ -7,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // StateFormatVersionConstraints defines the versions of the JSON state format
@@ -31,6 +35,10 @@ type State struct {
 
 	// The values that make up the state.
 	Values *StateValues `json:"values,omitempty"`
+
+	// Checks contains the results of any conditional checks when Values was
+	// last updated.
+	Checks []CheckResultStatic `json:"checks,omitempty"`
 }
 
 // UseJSONNumber controls whether the State will be decoded using the
@@ -70,6 +78,10 @@ func (s *State) Validate() error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler for State.
+//
+// As per established convention this method should only ever
+// be invoked *indirectly* via [encoding/json] library.
 func (s *State) UnmarshalJSON(b []byte) error {
 	type rawState State
 	var state rawState
@@ -165,6 +177,14 @@ type StateResource struct {
 	// DeposedKey is set if the resource instance has been marked Deposed and
 	// will be destroyed on the next apply.
 	DeposedKey string `json:"deposed_key,omitempty"`
+
+	// The version of the resource identity schema the "identity" property
+	// conforms to.
+	IdentitySchemaVersion *uint64 `json:"identity_schema_version,omitempty"`
+
+	// The JSON representation of the resource identity, whose structure
+	// depends on the resource identity schema.
+	IdentityValues map[string]interface{} `json:"identity,omitempty"`
 }
 
 // StateOutput represents an output value in a common state
@@ -175,4 +195,31 @@ type StateOutput struct {
 
 	// The value of the output.
 	Value interface{} `json:"value,omitempty"`
+
+	// The type of the output.
+	Type cty.Type `json:"type,omitempty"`
+}
+
+// jsonStateOutput describes an output value in a middle-step internal
+// representation before marshalled into a more useful StateOutput with cty.Type.
+//
+// This avoid panic on marshalling cty.NilType (from cty upstream)
+// which the default Go marshaller cannot ignore because it's a
+// not nil-able struct.
+type jsonStateOutput struct {
+	Sensitive bool            `json:"sensitive"`
+	Value     interface{}     `json:"value,omitempty"`
+	Type      json.RawMessage `json:"type,omitempty"`
+}
+
+func (so *StateOutput) MarshalJSON() ([]byte, error) {
+	jsonSa := &jsonStateOutput{
+		Sensitive: so.Sensitive,
+		Value:     so.Value,
+	}
+	if so.Type != cty.NilType {
+		outputType, _ := so.Type.MarshalJSON()
+		jsonSa.Type = outputType
+	}
+	return json.Marshal(jsonSa)
 }

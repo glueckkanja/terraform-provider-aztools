@@ -1,16 +1,20 @@
+// Copyright IBM Corp. 2020, 2026
+// SPDX-License-Identifier: MPL-2.0
+
 package releasesjson
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hc-install/internal/httpclient"
+	"github.com/hashicorp/hc-install/httpclient"
 )
 
 const defaultBaseURL = "https://releases.hashicorp.com"
@@ -45,30 +49,47 @@ type ProductBuild struct {
 }
 
 type Releases struct {
-	logger  *log.Logger
-	BaseURL string
+	logger     *log.Logger
+	httpClient *http.Client
+	BaseURL    string
 }
+
+var discardLogger = log.New(io.Discard, "", 0)
+var defaultClient = httpclient.New(httpclient.WithLogger(discardLogger))
 
 func NewReleases() *Releases {
-	return &Releases{
-		logger:  log.New(ioutil.Discard, "", 0),
-		BaseURL: defaultBaseURL,
+	r := &Releases{
+		logger:     discardLogger,
+		BaseURL:    defaultBaseURL,
+		httpClient: defaultClient,
 	}
+
+	return r
 }
 
+// SetLogger sets [log.Logger] to log internal debug messages.
+//
+// If you wish to log HTTP roundtrips you need to override
+// the [http.Client] via SetHTTPClient.
 func (r *Releases) SetLogger(logger *log.Logger) {
 	r.logger = logger
 }
 
-func (r *Releases) ListProductVersions(ctx context.Context, productName string) (ProductVersionsMap, error) {
-	client := httpclient.NewHTTPClient()
+func (r *Releases) SetHTTPClient(httpClient *http.Client) {
+	r.httpClient = httpClient
+}
 
+func (r *Releases) ListProductVersions(ctx context.Context, productName string) (ProductVersionsMap, error) {
 	productIndexURL := fmt.Sprintf("%s/%s/index.json",
 		r.BaseURL,
 		url.PathEscape(productName))
 	r.logger.Printf("requesting versions from %s", productIndexURL)
 
-	resp, err := client.Get(productIndexURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, productIndexURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request for %q: %w", productIndexURL, err)
+	}
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +100,7 @@ func (r *Releases) ListProductVersions(ctx context.Context, productName string) 
 	}
 
 	contentType := resp.Header.Get("content-type")
-	if contentType != "application/json" {
+	if contentType != "application/json" && contentType != "application/vnd+hashicorp.releases-api.v0+json" {
 		return nil, fmt.Errorf("unexpected Content-Type: %q", contentType)
 	}
 
@@ -87,7 +108,7 @@ func (r *Releases) ListProductVersions(ctx context.Context, productName string) 
 
 	r.logger.Printf("received %s", resp.Status)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +128,6 @@ func (r *Releases) ListProductVersions(ctx context.Context, productName string) 
 			continue
 		}
 
-		if ok, _ := versionIsSupported(v); !ok {
-			// Remove (currently unsupported) enterprise
-			// version and any other "custom" build
-			delete(p.Versions, rawVersion)
-			continue
-		}
-
 		p.Versions[rawVersion].Version = v
 	}
 
@@ -121,19 +135,17 @@ func (r *Releases) ListProductVersions(ctx context.Context, productName string) 
 }
 
 func (r *Releases) GetProductVersion(ctx context.Context, product string, version *version.Version) (*ProductVersion, error) {
-	if ok, err := versionIsSupported(version); !ok {
-		return nil, fmt.Errorf("%s: %w", product, err)
-	}
-
-	client := httpclient.NewHTTPClient()
-
 	indexURL := fmt.Sprintf("%s/%s/%s/index.json",
 		r.BaseURL,
 		url.PathEscape(product),
 		url.PathEscape(version.String()))
 	r.logger.Printf("requesting version from %s", indexURL)
 
-	resp, err := client.Get(indexURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, indexURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request for %q: %w", indexURL, err)
+	}
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +156,7 @@ func (r *Releases) GetProductVersion(ctx context.Context, product string, versio
 	}
 
 	contentType := resp.Header.Get("content-type")
-	if contentType != "application/json" {
+	if contentType != "application/json" && contentType != "application/vnd+hashicorp.releases-api.v0+json" {
 		return nil, fmt.Errorf("unexpected Content-Type: %q", contentType)
 	}
 
@@ -152,7 +164,7 @@ func (r *Releases) GetProductVersion(ctx context.Context, product string, versio
 
 	r.logger.Printf("received %s", resp.Status)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +177,4 @@ func (r *Releases) GetProductVersion(ctx context.Context, product string, versio
 	}
 
 	return pv, nil
-}
-
-func versionIsSupported(v *version.Version) (bool, error) {
-	isSupported := v.Metadata() == ""
-	if !isSupported {
-		return false, fmt.Errorf("cannot obtain %s (enterprise versions are not supported)",
-			v.String())
-	}
-	return true, nil
 }
